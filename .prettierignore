@@ -1,0 +1,3 @@
+# Generated Drizzle migration metadata must remain byte-for-byte tool-managed.
+drizzle/meta/
+pnpm-lock.yaml
