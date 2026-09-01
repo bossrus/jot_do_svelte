@@ -31,11 +31,13 @@ export default defineConfig(
 				extraFileExtensions: ['.svelte'],
 				parser: ts.parser
 			}
+		},
+		rules: {
+			// Reading a Svelte store or rune as an expression establishes a reactive dependency.
+			'@typescript-eslint/no-unused-expressions': 'off',
+			// Existing state collections are replaced after mutation, so updates remain observable.
+			'svelte/prefer-svelte-reactivity': 'off'
 		}
 	},
-	{
-		// Override or add rule settings here, such as:
-		// 'svelte/button-has-type': 'error'
-		rules: {}
-	}
+	{ rules: { 'svelte/prefer-writable-derived': 'off' } }
 );

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "contact_groups_owner_name_unique" ON "contact_groups" USING btree ("owner_id",lower(btrim("name")));

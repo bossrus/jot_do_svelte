@@ -1,3 +1,8 @@
 # Generated Drizzle migration metadata must remain byte-for-byte tool-managed.
 drizzle/meta/
 pnpm-lock.yaml
+# Generated Paraglide artifacts and cache are tool-managed.
+src/lib/paraglide/
+project.inlang/.meta.json
+project.inlang/cache/
+project.inlang/README.md

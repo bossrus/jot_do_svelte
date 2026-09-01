@@ -1,12 +1,99 @@
 <!doctype html>
-<html lang="en">
+<html lang="%lang%">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<script>
+			(function () {
+				try {
+					var t = localStorage.getItem('quick-todo.theme') || 'system';
+					var d =
+						t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+					document.documentElement.dataset.theme = d ? 'dark' : 'light';
+					document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+				} catch (e) {}
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
+		<div id="spa-loader" hidden role="status">
+			<span></span><strong>Jot<em>DO</em></strong
+			><small></small>
+		</div>
+		<script>
+			if (/^\/app(?:\/|$)/.test(location.pathname)) {
+				var loader = document.getElementById('spa-loader');
+				var supported = ['ru', 'en', 'es'];
+				var stored = null;
+				try {
+					stored = localStorage.getItem('quick-todo.locale');
+				} catch (error) {}
+				var browserLanguage = (navigator.languages || [navigator.language || 'en'])
+					.map(function (language) {
+						return language.toLowerCase().split('-')[0];
+					})
+					.find(function (language) {
+						return supported.includes(language);
+					});
+				var locale = supported.includes(stored)
+					? stored
+					: supported.includes(browserLanguage)
+						? browserLanguage
+						: 'en';
+				var loadingText = {
+					ru: ['Загрузка приложения', 'Загружаем задачи…'],
+					en: ['Loading application', 'Loading todos…'],
+					es: ['Cargando la aplicación', 'Cargando todos…']
+				};
+				document.documentElement.lang = locale;
+				loader.setAttribute('aria-label', loadingText[locale][0]);
+				loader.querySelector('small').textContent = loadingText[locale][1];
+				loader.hidden = false;
+			}
+		</script>
 		<div style="display: contents">%sveltekit.body%</div>
+		<style>
+			#spa-loader {
+				position: fixed;
+				z-index: 9999;
+				inset: 0;
+				display: grid;
+				place-content: center;
+				justify-items: center;
+				gap: 0.7rem;
+				background: #f5f7f5;
+				color: #17241b;
+				font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+			}
+			#spa-loader[hidden] {
+				display: none;
+			}
+			#spa-loader span {
+				width: 2.3rem;
+				height: 2.3rem;
+				border: 0.22rem solid #d6e3d9;
+				border-top-color: #326a4b;
+				border-radius: 50%;
+				animation: spa-spin 0.75s linear infinite;
+			}
+			#spa-loader strong {
+				font-size: 1.45rem;
+				letter-spacing: -0.06em;
+			}
+			#spa-loader em {
+				color: #326a4b;
+				font-style: normal;
+			}
+			#spa-loader small {
+				color: #718077;
+			}
+			@keyframes spa-spin {
+				to {
+					transform: rotate(360deg);
+				}
+			}
+		</style>
 	</body>
 </html>

@@ -18,10 +18,16 @@ Install dependencies and create the local environment file:
 
 ```sh
 pnpm install
-cp .env.example .env
+cp .env.example .env.local
 ```
 
-Set `DATABASE_URL` in `.env` to a PostgreSQL connection string for the `quick_todo` database. Never commit `.env`.
+Set `DATABASE_URL` in `.env.local` to the local PostgreSQL connection string for the
+`quick_todo` database. Local development uses `APP_URL=http://localhost:5173` and the
+Windows PostgreSQL instance on port `5433`.
+
+Production settings must not be copied into the repository. Create
+`/etc/jotdo/jotdo.env` on the server from `.env.production.example`; the systemd unit reads
+that file directly. Never commit either `.env.local` or the populated production file.
 
 Start the development server:
 

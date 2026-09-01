@@ -1,0 +1,1 @@
+ALTER TABLE "todo_access_revocations" ADD CONSTRAINT "todo_access_revocations_todo_id_todos_id_fk" FOREIGN KEY ("todo_id") REFERENCES "public"."todos"("id") ON DELETE cascade ON UPDATE no action;
