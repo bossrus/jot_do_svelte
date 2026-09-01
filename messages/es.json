@@ -514,5 +514,13 @@
 	"former_contacts": "Contactos anteriores",
 	"removal_reason_label": "Motivo de eliminación del contacto",
 	"optional_reason": "Motivo (opcional)",
-	"confirm_removal": "Confirmar eliminación"
+	"confirm_removal": "Confirmar eliminación",
+	"support_title": "Soporte técnico",
+	"support_intro": "Este mensaje se enviará al soporte técnico. Añade capturas de pantalla y anotaciones que muestren qué falla y dónde. Describe el error y los pasos que lo provocaron con el mayor detalle posible.",
+	"support_editor_label": "Mensaje al soporte técnico",
+	"support_placeholder": "Describe el problema y añade capturas…",
+	"support_auth_required": "Inicia sesión para enviar una solicitud de soporte.",
+	"support_send_failed": "No se pudo enviar el mensaje. Inténtalo de nuevo.",
+	"support_email_unavailable": "El servicio de correo no está disponible. Tu mensaje no se envió; inténtalo de nuevo más tarde.",
+	"support_sent": "Tu mensaje fue enviado al soporte técnico."
 }

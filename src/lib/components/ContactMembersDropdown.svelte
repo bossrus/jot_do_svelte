@@ -310,13 +310,14 @@
 								</form>{/if}
 						</div>{/each}{/if}
 			</div>
-			<button
-				class="apply"
-				type="button"
-				title={m.save_contacts()}
-				disabled={pending}
-				onclick={() => void apply()}><IconCheck size={19} /><span>{m.save()}</span></button
-			>
+			<div class="apply">
+				<IconButton
+					icon={IconCheck}
+					label={m.save_contacts()}
+					disabled={pending}
+					onclick={() => void apply()}
+				/>
+			</div>
 		</div>{/if}
 </div>
 
@@ -510,19 +511,12 @@
 	}
 	.apply {
 		display: flex;
-		width: auto;
-		height: 2.55rem;
-		align-items: center;
-		gap: 0.35rem;
 		margin: 0.6rem 0 0 auto;
-		border: 0;
-		border-radius: 0.55rem;
-		background: var(--color-accent);
-		padding: 0 0.75rem;
-		color: #fff;
-		cursor: pointer;
 	}
-	.apply:disabled {
-		opacity: 0.5;
+	.apply :global(button) {
+		width: 2.7rem;
+		height: 2.7rem;
+		background: var(--color-accent);
+		color: #fff;
 	}
 </style>

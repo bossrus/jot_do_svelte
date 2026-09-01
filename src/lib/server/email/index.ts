@@ -202,3 +202,27 @@ export async function sendFriendRequestEmail(
 		html: `<p><strong>${safeSender}</strong> отправил вам заявку в контакты Quick Todo.</p><p><a href="${safeUrl}">Открыть Quick Todo</a></p><p>Если вы не ожидали эту заявку, её можно отклонить в приложении.</p>`
 	});
 }
+
+export type SupportEmailAttachment = {
+	filename: string;
+	content: Buffer;
+	contentType: string;
+};
+
+export async function sendSupportEmail(
+	to: string[],
+	reporter: { name: string; email: string; publicId?: string | null },
+	message: string,
+	attachments: SupportEmailAttachment[]
+) {
+	const reporterLabel = `${reporter.name} <${reporter.email}>${reporter.publicId ? ` (${reporter.publicId})` : ''}`;
+	await getTransport().sendMail({
+		from: readMailConfig().from,
+		to,
+		replyTo: reporter.email,
+		subject: `Техподдержка JotDO — ${reporter.name}`,
+		text: `Новое обращение в техподдержку JotDO.\n\nПользователь: ${reporterLabel}\n\n${message}`,
+		html: `<h1>Новое обращение в техподдержку JotDO</h1><p><strong>Пользователь:</strong> ${escapeHtml(reporterLabel)}</p><div style="white-space:pre-wrap">${escapeHtml(message)}</div>`,
+		attachments
+	});
+}

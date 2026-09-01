@@ -514,5 +514,13 @@
 	"former_contacts": "Former contacts",
 	"removal_reason_label": "Contact removal reason",
 	"optional_reason": "Reason (optional)",
-	"confirm_removal": "Confirm removal"
+	"confirm_removal": "Confirm removal",
+	"support_title": "Support",
+	"support_intro": "This message will be sent to technical support. Add screenshots and annotations showing what is wrong and where. Describe the bug and the steps that led to it in as much detail as possible.",
+	"support_editor_label": "Message to technical support",
+	"support_placeholder": "Describe the problem and add screenshots…",
+	"support_auth_required": "Sign in to send a support request.",
+	"support_send_failed": "The message could not be sent. Please try again.",
+	"support_email_unavailable": "The email service is currently unavailable. Your message was not sent — please try again later.",
+	"support_sent": "Your message was sent to technical support."
 }

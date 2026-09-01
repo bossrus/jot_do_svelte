@@ -11,6 +11,7 @@
 		const actor = item.actorName ?? m.user();
 		const title = String(item.payload.todoTitle ?? m.todo_fallback());
 		const group = String(item.payload.groupName ?? m.group_fallback());
+		const reporter = String(item.payload.reporterName ?? actor);
 		const texts: Record<string, string> = {
 			'friend.requested': m.notification_friend_requested({ actor }),
 			'friend.accepted': m.notification_friend_accepted({ actor }),
@@ -23,7 +24,8 @@
 			'worker.removed': m.notification_worker_removed({ actor, title }),
 			'worker.started': m.notification_worker_started({ actor, title }),
 			'worker.completed': m.notification_worker_completed({ actor, title }),
-			'worker.left': m.notification_worker_left({ actor, title })
+			'worker.left': m.notification_worker_left({ actor, title }),
+			'support.received': `Новое обращение в техподдержку от ${reporter}. Письмо отправлено администраторам.`
 		};
 		return texts[item.type] ?? m.notification_changed();
 	}

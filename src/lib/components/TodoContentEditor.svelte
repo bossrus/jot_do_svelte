@@ -34,6 +34,7 @@
 		onsubmit,
 		onchange,
 		submitOnEnter = true,
+		showSubmitHint = true,
 		oncancel
 	}: {
 		initialBlocks?: TodoContentBlock[];
@@ -46,6 +47,7 @@
 		onsubmit?: (blocks: TodoContentBlock[], images: NewTodoImage[]) => Promise<boolean>;
 		onchange?: (blocks: TodoContentBlock[], images: NewTodoImage[]) => void;
 		submitOnEnter?: boolean;
+		showSubmitHint?: boolean;
 		oncancel?: () => void;
 	} = $props();
 	let blocks = $state<TodoContentBlock[]>(untrack(() => cloneBlocks(initialBlocks)));
@@ -323,7 +325,8 @@
 			title={m.add_image()}
 			onclick={() => picker?.click()}><IconPhoto size={23} stroke={1.8} /></button
 		>
-		<span>{submitOnEnter ? m.enter_save_hint() : m.enter_line_hint()}</span>
+		{#if showSubmitHint}<span>{submitOnEnter ? m.enter_save_hint() : m.enter_line_hint()}</span
+			>{/if}
 		{#if submitLabel}
 			{#if iconSubmit}
 				<button

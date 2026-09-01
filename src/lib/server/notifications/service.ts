@@ -17,7 +17,8 @@ export type NotificationType =
 	| 'worker.removed'
 	| 'worker.started'
 	| 'worker.completed'
-	| 'worker.left';
+	| 'worker.left'
+	| 'support.received';
 
 export type CreateNotification = {
 	userId: string;

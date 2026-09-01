@@ -228,6 +228,24 @@
 				onclick={() => onclose?.()}><IconCircleX size={23} /></button
 			>
 		{/if}
+		{#if onreopen}
+			<button
+				class="design-action play"
+				type="button"
+				title={m.reopen()}
+				aria-label={m.reopen()}
+				onclick={() => onreopen?.()}><IconRotateClockwise size={23} /></button
+			>
+		{/if}
+		{#if ondelete}
+			<button
+				class="design-action close"
+				type="button"
+				title={m.delete()}
+				aria-label={m.delete()}
+				onclick={() => ondelete?.()}><IconTrash size={23} /></button
+			>
+		{/if}
 		<span class="access-wrap">
 			<button
 				class="access-button"

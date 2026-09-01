@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
+	import { resolve } from '$app/paths';
 	import type { TodoContentBlock } from '$lib/client/content-blocks';
 	import {
 		isTodoOwner,
@@ -30,6 +31,7 @@
 	import TodoAccessRequestsModal from '$lib/components/TodoAccessRequestsModal.svelte';
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
 	import AboutModal from '$lib/components/AboutModal.svelte';
+	import SupportModal from '$lib/components/SupportModal.svelte';
 	import Input from '$lib/components/Input.svelte';
 	import ContactGroupsDropdown from '$lib/components/ContactGroupsDropdown.svelte';
 	import type { FriendGroup } from '$lib/friends/contracts';
@@ -43,6 +45,7 @@
 		IconBell,
 		IconAdjustmentsHorizontal,
 		IconInfoCircle,
+		IconHeadset,
 		IconCreditCard,
 		IconDoorExit,
 		IconFriends,
@@ -63,6 +66,19 @@
 	}
 
 	let selectedStatus = $state<LocalTodoStatus>('active');
+	let supportOpen = $state(false);
+	let isAdmin = $state(false);
+	$effect(() => {
+		if (!$session.data?.user) {
+			isAdmin = false;
+			return;
+		}
+		const controller = new AbortController();
+		void fetch('/api/admin/access', { signal: controller.signal }).then((response) => {
+			isAdmin = response.ok;
+		});
+		return () => controller.abort();
+	});
 	let searchQuery = $state('');
 	let filtersOpen = $state(false);
 	let selectedGroupId = $state('');
@@ -396,6 +412,7 @@
 			Promise.all(
 				ownedTodoIds.map(async (todoId) => {
 					const response = await fetch(`/api/todos/${encodeURIComponent(todoId)}/access`);
+					if (response.status === 404) return null;
 					if (!response.ok) throw new Error('Failed to load todo access');
 					return [todoId, todoAccessListSchema.parse(await response.json())] as const;
 				})
@@ -405,15 +422,17 @@
 				if (cancelled) return;
 				const groupNames = new Map(groupList.groups.map((group) => [group.id, group.name]));
 				accessSummaries = new Map(
-					accessLists.map(([todoId, access]) => [
-						todoId,
-						{
-							participants: access.effectiveParticipants,
-							groupNames: access.groupIds
-								.map((id) => groupNames.get(id))
-								.filter((name): name is string => Boolean(name))
-						}
-					])
+					accessLists
+						.filter((item) => item !== null)
+						.map(([todoId, access]) => [
+							todoId,
+							{
+								participants: access.effectiveParticipants,
+								groupNames: access.groupIds
+									.map((id) => groupNames.get(id))
+									.filter((name): name is string => Boolean(name))
+							}
+						])
 				);
 			})
 			.catch((error) => console.error('Failed to load todo access summaries', error));
@@ -597,6 +616,8 @@
 					</div>
 				</div>
 				<nav class="side-nav bottom">
+					{#if isAdmin}<a href={resolve('/admin')}><IconUserCog size={24} /><span>Админка</span></a
+						>{/if}
 					<button onclick={() => (plansOpen = true)} aria-expanded={plansOpen}
 						><IconCreditCard size={24} /><span>{t(m.plan)}</span></button
 					>
@@ -605,6 +626,12 @@
 					>
 					<button onclick={() => (aboutOpen = true)} aria-expanded={aboutOpen}
 						><IconInfoCircle size={24} /><span>{t(m.about)}</span></button
+					>
+					<button
+						onclick={() => (supportOpen = true)}
+						aria-expanded={supportOpen}
+						title={t(m.support_title)}
+						><IconHeadset size={24} /><span>{t(m.support_title)}</span></button
 					>
 					<button onclick={() => ($session.data ? void authService.signOut() : (authOpen = true))}
 						><IconDoorExit size={24} /><span>{$session.data ? t(m.logout) : t(m.login)}</span
@@ -912,6 +939,7 @@
 {#if plansOpen}<PlanSelector onclose={() => (plansOpen = false)} />{/if}
 {#if appSettingsOpen}<SettingsModal onclose={() => (appSettingsOpen = false)} />{/if}
 {#if aboutOpen}<AboutModal onclose={() => (aboutOpen = false)} />{/if}
+{#if supportOpen}<SupportModal onclose={() => (supportOpen = false)} />{/if}
 {#if recurringTodo}<RecurringTodoModal
 		todo={recurringTodo}
 		onclose={() => (recurringId = null)}
@@ -1007,7 +1035,8 @@
 		display: grid;
 		gap: 13px;
 	}
-	.side-nav button {
+	.side-nav button,
+	.side-nav a {
 		position: relative;
 		display: grid;
 		grid-template-columns: 40px 1fr auto;
@@ -1022,6 +1051,7 @@
 		text-align: left;
 		cursor: pointer;
 		font-size: 18px;
+		text-decoration: none;
 	}
 	.side-nav button b,
 	.topbar b {
@@ -1472,12 +1502,14 @@
 		.brand span {
 			font-size: 23px;
 		}
-		.side-nav button {
+		.side-nav button,
+		.side-nav a {
 			grid-template-columns: 1fr;
 			padding: 0;
 			place-items: center;
 		}
 		.side-nav button span,
+		.side-nav a span,
 		.side-nav button b,
 		.profile div:last-child {
 			display: none;
@@ -1568,7 +1600,8 @@
 			flex-direction: row;
 			gap: 0.25rem;
 		}
-		.side-nav button {
+		.side-nav button,
+		.side-nav a {
 			width: 3.25rem;
 			min-width: 3.25rem;
 			height: 3.25rem;
