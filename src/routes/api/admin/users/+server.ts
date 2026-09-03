@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import { and, asc, count, desc, eq, gte, ilike, isNull, lte, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '$lib/server/db';
-import { todoUserAccess, todos, users } from '$lib/server/db/schema';
+import { supportRequests, todoUserAccess, todos, users } from '$lib/server/db/schema';
 import { requireAdmin } from '$lib/server/admin/auth';
 import { USER_PLANS } from '$lib/billing/plans';
 
@@ -36,7 +36,9 @@ export async function GET(event) {
 	const search = event.url.searchParams.get('search')?.trim();
 	const registeredFrom = event.url.searchParams.get('registeredFrom');
 	const registeredTo = event.url.searchParams.get('registeredTo');
-	const sort = event.url.searchParams.get('sort') ?? 'createdAt';
+	const withSupport = event.url.searchParams.get('withSupport') === 'true';
+	const withUnreadSupport = event.url.searchParams.get('withUnreadSupport') === 'true';
+	const sort = event.url.searchParams.get('sort') ?? 'supportRequests';
 	const direction = event.url.searchParams.get('direction') === 'asc' ? 'asc' : 'desc';
 	const conditions = [];
 	if (search) {
@@ -58,6 +60,14 @@ export async function GET(event) {
 	}
 	if (registeredFrom) conditions.push(gte(users.createdAt, new Date(`${registeredFrom}T00:00:00`)));
 	if (registeredTo) conditions.push(lte(users.createdAt, new Date(`${registeredTo}T23:59:59.999`)));
+	if (withSupport)
+		conditions.push(
+			sql`exists (select 1 from ${supportRequests} where ${supportRequests.userId} = ${users.id})`
+		);
+	if (withUnreadSupport)
+		conditions.push(
+			sql`exists (select 1 from ${supportRequests} where ${supportRequests.userId} = ${users.id} and ${supportRequests.readAt} is null)`
+		);
 	const where = conditions.length ? and(...conditions) : undefined;
 	const [{ total }] = await db.select({ total: count() }).from(users).where(where);
 	const directCounts = db
@@ -73,13 +83,28 @@ export async function GET(event) {
 		.where(isNull(todos.deletedAt))
 		.groupBy(todoUserAccess.userId)
 		.as('shared_counts');
+	const supportCounts = db
+		.select({
+			userId: supportRequests.userId,
+			value: count().as('support_value'),
+			unread: sql<number>`count(*) filter (where ${supportRequests.readAt} is null)`.as(
+				'support_unread'
+			),
+			latestAt: sql<Date>`max(${supportRequests.createdAt})`.as('support_latest_at')
+		})
+		.from(supportRequests)
+		.groupBy(supportRequests.userId)
+		.as('support_counts');
 	const directValue = sql<number>`coalesce(${directCounts.value}, 0)`;
 	const sharedValue = sql<number>`coalesce(${sharedCounts.value}, 0)`;
+	const supportValue = sql<number>`coalesce(${supportCounts.value}, 0)`;
+	const supportUnreadValue = sql<number>`coalesce(${supportCounts.unread}, 0)`;
 	const sortColumns = {
 		displayName: users.displayName,
 		plan: users.plan,
 		directTodos: directValue,
 		sharedTodos: sharedValue,
+		supportRequests: supportCounts.latestAt,
 		createdAt: users.createdAt
 	} as const;
 	const sortColumn = sortColumns[sort as keyof typeof sortColumns] ?? users.createdAt;
@@ -99,19 +124,34 @@ export async function GET(event) {
 			createdAt: users.createdAt,
 			updatedAt: users.updatedAt,
 			directTodos: directValue,
-			sharedTodos: sharedValue
+			sharedTodos: sharedValue,
+			supportRequests: supportValue,
+			supportUnread: supportUnreadValue,
+			latestSupportAt: supportCounts.latestAt
 		})
 		.from(users)
 		.leftJoin(directCounts, eq(directCounts.userId, users.id))
 		.leftJoin(sharedCounts, eq(sharedCounts.userId, users.id))
+		.leftJoin(supportCounts, eq(supportCounts.userId, users.id))
 		.where(where)
-		.orderBy(direction === 'asc' ? asc(sortColumn) : desc(sortColumn), asc(users.id))
+		.orderBy(
+			sort === 'supportRequests'
+				? direction === 'asc'
+					? sql`${sortColumn} asc nulls last`
+					: sql`${sortColumn} desc nulls last`
+				: direction === 'asc'
+					? asc(sortColumn)
+					: desc(sortColumn),
+			asc(users.id)
+		)
 		.limit(pageSize)
 		.offset((page - 1) * pageSize);
 	const rows = rawRows.map((user) => ({
 		...user,
 		directTodos: Number(user.directTodos),
-		sharedTodos: Number(user.sharedTodos)
+		sharedTodos: Number(user.sharedTodos),
+		supportRequests: Number(user.supportRequests),
+		supportUnread: Number(user.supportUnread)
 	}));
 	return json({
 		users: rows,

@@ -5,7 +5,11 @@
 	import { USER_PLANS, PLAN_DEFINITIONS, type UserPlan } from '$lib/billing/plans';
 	import UserAvatar from '$lib/components/UserAvatar.svelte';
 	import Input from '$lib/components/Input.svelte';
+	import Modal from '$lib/components/Modal.svelte';
+	import ContentViewer from '$lib/components/ContentViewer.svelte';
 	import { isImportableImage } from '$lib/client/images';
+	import type { ImageMarkupObject } from '$lib/client/markup/types';
+	import { IconMessages, IconMessageExclamation } from '@tabler/icons-svelte-runes';
 
 	type AdminUser = {
 		id: string;
@@ -23,6 +27,27 @@
 		updatedAt: string;
 		directTodos: number;
 		sharedTodos: number;
+		supportRequests: number;
+		supportUnread: number;
+		latestSupportAt: string | null;
+	};
+	type SupportRequest = {
+		id: string;
+		createdAt: string;
+		readAt: string | null;
+		content: {
+			blocks: Array<
+				{ id: string; type: 'text'; text: string } | { id: string; type: 'image'; imageId: string }
+			>;
+			images: Array<{
+				id: string;
+				fileName: string;
+				blob: Blob;
+				width: number | null;
+				height: number | null;
+				markup: ImageMarkupObject[];
+			}>;
+		};
 	};
 
 	let loading = $state(true);
@@ -36,11 +61,18 @@
 	let search = $state('');
 	let registeredFrom = $state('');
 	let registeredTo = $state('');
+	let withSupport = $state(false);
+	let withUnreadSupport = $state(false);
+	let supportUser = $state<AdminUser | null>(null);
+	let supportItems = $state<SupportRequest[]>([]);
+	let supportLoading = $state(false);
+	let supportError = $state('');
 	let page = $state(1);
 	let pages = $state(1);
 	let total = $state(0);
-	type SortField = 'displayName' | 'plan' | 'directTodos' | 'sharedTodos' | 'createdAt';
-	let sort = $state<SortField>('createdAt');
+	type SortField =
+		'displayName' | 'plan' | 'directTodos' | 'sharedTodos' | 'supportRequests' | 'createdAt';
+	let sort = $state<SortField>('supportRequests');
 	let direction = $state<'asc' | 'desc'>('desc');
 	const pageSize = 20;
 
@@ -73,6 +105,8 @@
 		if (search.trim()) params.set('search', search.trim());
 		if (registeredFrom) params.set('registeredFrom', registeredFrom);
 		if (registeredTo) params.set('registeredTo', registeredTo);
+		if (withSupport) params.set('withSupport', 'true');
+		if (withUnreadSupport) params.set('withUnreadSupport', 'true');
 		try {
 			const response = await request(`/api/admin/users?${params}`);
 			if (!response.ok) throw new Error('Не удалось загрузить пользователей');
@@ -85,6 +119,69 @@
 		} finally {
 			loading = false;
 		}
+	}
+	async function openSupport(user: AdminUser) {
+		if (!user.supportRequests) return;
+		supportUser = user;
+		supportItems = [];
+		supportError = '';
+		supportLoading = true;
+		try {
+			const response = await request(`/api/admin/users/${encodeURIComponent(user.id)}/support`);
+			const body = await response.json().catch(() => ({}));
+			if (!response.ok) throw new Error(body.message || 'Не удалось загрузить обращения');
+			supportItems = await Promise.all(
+				body.requests.map(
+					async (
+						item: Omit<SupportRequest, 'content'> & {
+							content: {
+								blocks: SupportRequest['content']['blocks'];
+								images: Array<{
+									id: string;
+									fileName: string;
+									url: string;
+									markup: ImageMarkupObject[];
+								}>;
+							};
+						}
+					) => ({
+						...item,
+						content: {
+							blocks: item.content.blocks,
+							images: await Promise.all(
+								item.content.images.map(async (image) => {
+									const imageResponse = await request(image.url);
+									if (!imageResponse.ok)
+										throw new Error('Не удалось загрузить изображение обращения');
+									const blob = await imageResponse.blob();
+									let width: number | null = null;
+									let height: number | null = null;
+									try {
+										const bitmap = await createImageBitmap(blob);
+										width = bitmap.width;
+										height = bitmap.height;
+										bitmap.close();
+									} catch {
+										// Метаданные необязательны для показа исходного изображения.
+									}
+									return { ...image, blob, width, height };
+								})
+							)
+						}
+					})
+				)
+			);
+			users = users.map((item) => (item.id === user.id ? { ...item, supportUnread: 0 } : item));
+		} catch (error) {
+			supportError = error instanceof Error ? error.message : 'Ошибка загрузки';
+		} finally {
+			supportLoading = false;
+		}
+	}
+	function closeSupport() {
+		supportUser = null;
+		supportItems = [];
+		void loadUsers();
 	}
 	function applyFilters() {
 		page = 1;
@@ -206,7 +303,41 @@
 			applyFilters();
 		}}
 	>
-		<Input bind:value={search} placeholder="Поиск: имя, email, ID, тариф…" />
+		<div class="search-with-support-filters">
+			<Input bind:value={search} placeholder="Поиск: имя, email, ID, тариф…" />
+			<label
+				class:active={withSupport}
+				class="icon-filter"
+				title="Только пользователи с обращениями"
+			>
+				<input
+					type="checkbox"
+					checked={withSupport}
+					onchange={(event) => {
+						withSupport = event.currentTarget.checked;
+						applyFilters();
+					}}
+				/>
+				<IconMessages size={21} aria-hidden="true" />
+				<span class="sr-only">С обращениями</span>
+			</label>
+			<label
+				class:active={withUnreadSupport}
+				class="icon-filter"
+				title="Только пользователи с непрочитанными обращениями"
+			>
+				<input
+					type="checkbox"
+					checked={withUnreadSupport}
+					onchange={(event) => {
+						withUnreadSupport = event.currentTarget.checked;
+						applyFilters();
+					}}
+				/>
+				<IconMessageExclamation size={21} aria-hidden="true" />
+				<span class="sr-only">С непрочитанными обращениями</span>
+			</label>
+		</div>
 		<Input type="date" bind:value={registeredFrom} placeholder="Регистрация с" />
 		<Input type="date" bind:value={registeredTo} placeholder="Регистрация по" />
 		<button type="submit">Найти</button>
@@ -236,6 +367,10 @@
 								>По шарингу{sortMark('sharedTodos')}</button
 							></th
 						><th
+							><button class="sort" onclick={() => changeSort('supportRequests')}
+								>Обращения{sortMark('supportRequests')}</button
+							></th
+						><th
 							><button class="sort" onclick={() => changeSort('createdAt')}
 								>Регистрация{sortMark('createdAt')}</button
 							></th
@@ -243,7 +378,7 @@
 					></thead
 				>
 				<tbody
-					>{#each users as user}<tr>
+					>{#each users as user (user.id)}<tr>
 							<td
 								><div class="identity">
 									<UserAvatar name={user.displayName} image={user.image} size={42} />
@@ -261,7 +396,15 @@
 										: 'без срока'}</small
 								></td
 							>
-							<td>{user.directTodos}</td><td>{user.sharedTodos}</td>
+							<td>{user.directTodos}</td><td>{user.sharedTodos}</td><td>
+								<button
+									class:unread={user.supportUnread > 0}
+									class="support-count"
+									disabled={!user.supportRequests}
+									title={user.supportRequests ? 'Открыть обращения' : 'Обращений нет'}
+									onclick={() => openSupport(user)}>{user.supportRequests}</button
+								></td
+							>
 							<td>{new Date(user.createdAt).toLocaleString()}</td><td
 								><button class="secondary" onclick={() => edit(user)}>Изменить</button></td
 							>
@@ -287,6 +430,40 @@
 		</nav>
 	{/if}
 </main>
+
+{#if supportUser}
+	<Modal
+		title={`Обращения · ${supportUser.displayName}`}
+		onclose={closeSupport}
+		width="48rem"
+		height="min(46rem, calc(100dvh - 2rem))"
+		showFooter={false}
+	>
+		<div class="support-modal-content">
+			{#if supportLoading}<div class="support-loading" role="status">Загрузка обращений…</div>
+			{:else if supportError}<p class="error" role="alert">{supportError}</p>
+			{:else if !supportItems.length}<p class="empty">Обращений нет</p>
+			{:else}<ol class="support-list">
+					{#each supportItems as item (item.id)}
+						<li class:was-unread={!item.readAt}>
+							<header>
+								<time datetime={new Date(item.createdAt).toISOString()}
+									>{new Date(item.createdAt).toLocaleString()}</time
+								>{#if !item.readAt}<span>Новое</span>{/if}
+							</header>
+							<div class="support-message">
+								<ContentViewer
+									blocks={item.content.blocks}
+									images={item.content.images}
+									imageViewerMode="view"
+								/>
+							</div>
+						</li>
+					{/each}
+				</ol>{/if}
+		</div>
+	</Modal>
+{/if}
 
 {#if selected}<div
 		class="backdrop"
@@ -345,7 +522,8 @@
 				/>
 				<label
 					>Тариф<select bind:value={selected.plan}
-						>{#each USER_PLANS as plan}<option value={plan}>{PLAN_DEFINITIONS[plan].label}</option
+						>{#each USER_PLANS as plan (plan)}<option value={plan}
+								>{PLAN_DEFINITIONS[plan].label}</option
 							>{/each}</select
 					></label
 				>
@@ -433,6 +611,37 @@
 		border-radius: 16px;
 		margin-bottom: 18px;
 	}
+	.search-with-support-filters {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto auto;
+		gap: 8px;
+		align-items: end;
+	}
+	.icon-filter {
+		display: grid;
+		width: 42px;
+		height: 42px;
+		place-items: center;
+		box-sizing: border-box;
+		border: 1px solid #cbd8d0;
+		border-radius: 9px;
+		background: #fff;
+		color: #526159;
+		cursor: pointer;
+	}
+	.icon-filter.active {
+		border-color: #26754c;
+		background: #e8f1eb;
+		color: #205f40;
+	}
+	.icon-filter input,
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+	}
 	label {
 		display: grid;
 		gap: 6px;
@@ -472,6 +681,21 @@
 	.secondary {
 		background: #e8f1eb;
 		color: #205f40;
+	}
+	.support-count {
+		min-width: 2.5rem;
+		padding: 7px 10px;
+		background: transparent;
+		color: #26754c;
+		font-weight: 500;
+		text-decoration: underline;
+	}
+	.support-count.unread {
+		font-weight: 850;
+	}
+	.support-count:disabled {
+		color: #78827c;
+		text-decoration: none;
 	}
 	.danger {
 		background: #fbe9e7;
@@ -630,6 +854,54 @@
 	.notice {
 		color: #26754c;
 		margin: 12px 0;
+	}
+	.support-modal-content {
+		min-height: 100%;
+		padding: 1rem;
+		box-sizing: border-box;
+	}
+	.support-loading {
+		display: grid;
+		min-height: 12rem;
+		place-items: center;
+	}
+	.support-list {
+		display: grid;
+		gap: 0.9rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.support-list > li {
+		border: 1px solid #dce5df;
+		border-radius: 12px;
+		background: white;
+		overflow: hidden;
+	}
+	.support-list > li.was-unread {
+		border-color: #7aad91;
+	}
+	.support-list header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 0.65rem 0.85rem;
+		border-bottom: 1px solid #e8eeea;
+		color: #66736b;
+		font-size: 0.78rem;
+	}
+	.support-list header span {
+		border-radius: 999px;
+		background: #e5f3e9;
+		padding: 0.2rem 0.5rem;
+		color: #205f40;
+		font-weight: 800;
+	}
+	.support-message {
+		display: grid;
+		gap: 0.6rem;
+		padding: 0.9rem;
 	}
 	@media (max-width: 760px) {
 		.filters,

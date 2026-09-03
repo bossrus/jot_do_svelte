@@ -2,11 +2,18 @@
 	import type { TodoContentBlock } from '$lib/client/content-blocks';
 	import { visibleContentBlocks } from '$lib/client/content-viewer';
 	import TodoImagePreview from './TodoImagePreview.svelte';
+	import type { ImageMarkupObject } from '$lib/client/markup/types';
 	import { m } from '$lib/paraglide/messages';
 	import { localeVersion } from '$lib/client/locale';
 	$localeVersion;
 
-	type ContentImage = { id: string; blob: Blob; width: number | null; height: number | null };
+	type ContentImage = {
+		id: string;
+		blob: Blob;
+		width: number | null;
+		height: number | null;
+		markup?: ImageMarkupObject[];
+	};
 	let {
 		blocks,
 		images,
@@ -32,6 +39,7 @@
 					width={imageMap.get(block.imageId)!.width}
 					height={imageMap.get(block.imageId)!.height}
 					viewerMode={imageViewerMode}
+					initialMarkup={imageMap.get(block.imageId)!.markup}
 					alt={m.attached_image()}
 				/>
 			</div>

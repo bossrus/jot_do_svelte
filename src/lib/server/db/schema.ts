@@ -58,6 +58,19 @@ export const recurringOccurrenceStatus = pgEnum('recurring_occurrence_status', [
 
 export type NotificationPayload = Record<string, string | number | boolean | null>;
 
+export type SupportRequestContent = {
+	blocks: Array<
+		{ id: string; type: 'text'; text: string } | { id: string; type: 'image'; imageId: string }
+	>;
+	images: Array<{
+		id: string;
+		storageKey: string;
+		mimeType: string;
+		fileName: string;
+		markup: Array<Record<string, unknown>>;
+	}>;
+};
+
 export const users = pgTable(
 	'users',
 	{
@@ -81,6 +94,23 @@ export const users = pgTable(
 			'users_hard_delete_schedule_check',
 			sql`(${table.deletedAt} is null and ${table.hardDeleteAfter} is null) or (${table.deletedAt} is not null and ${table.hardDeleteAfter} >= ${table.deletedAt})`
 		)
+	]
+);
+
+export const supportRequests = pgTable(
+	'support_requests',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		userId: uuid('user_id')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+		content: jsonb('content').$type<SupportRequestContent>().notNull(),
+		createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+		readAt: timestamp('read_at', { withTimezone: true })
+	},
+	(table) => [
+		index('support_requests_user_created_idx').on(table.userId, table.createdAt.desc()),
+		index('support_requests_user_unread_idx').on(table.userId, table.readAt, table.createdAt.desc())
 	]
 );
 
