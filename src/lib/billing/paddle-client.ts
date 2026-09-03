@@ -3,6 +3,10 @@ import { initializePaddle, type Paddle, type PaddleEventData } from '@paddle/pad
 let loader: Promise<Paddle> | null = null;
 let eventHandler: (event: PaddleEventData) => void = () => undefined;
 
+export function getPaddleJsEnvironment(token: string): 'sandbox' | 'production' {
+	return token.startsWith('test_') ? 'sandbox' : 'production';
+}
+
 export async function loadPaddle(
 	token: string,
 	onEvent: (event: PaddleEventData) => void
@@ -11,7 +15,7 @@ export async function loadPaddle(
 	if (!loader) {
 		loader = initializePaddle({
 			token,
-			environment: 'sandbox',
+			environment: getPaddleJsEnvironment(token),
 			eventCallback: (event) => eventHandler(event)
 		}).then((paddle) => {
 			if (!paddle) throw new Error('Paddle.js не загрузился');

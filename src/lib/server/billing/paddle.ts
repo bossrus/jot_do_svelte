@@ -65,10 +65,16 @@ function apiKey(): string {
 
 let paddleClient: Paddle | null = null;
 
+export function getPaddleEnvironment(value: string | undefined): Environment {
+	return value === 'live' || value === 'production'
+		? Environment.production
+		: Environment.sandbox;
+}
+
 export function getPaddleClient(): Paddle {
 	if (!paddleClient) {
 		paddleClient = new Paddle(apiKey(), {
-			environment: env.PADDLE_ENVIRONMENT === 'live' ? Environment.production : Environment.sandbox
+			environment: getPaddleEnvironment(env.PADDLE_ENVIRONMENT)
 		});
 	}
 	return paddleClient;
