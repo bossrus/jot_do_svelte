@@ -85,6 +85,20 @@
 			></Cluster
 		>{/snippet}
 	<AboutModal standalone {locale} />
+	<footer class="legal-footer" aria-label="Legal">
+		<a href={locale === 'en' ? '/pricing' : `/${locale}/pricing`}
+			>{locale === 'ru' ? 'Тарифы' : locale === 'es' ? 'Precios' : 'Pricing'}</a
+		>
+		<a href={locale === 'en' ? '/terms' : `/${locale}/terms`}
+			>{locale === 'ru' ? 'Условия' : locale === 'es' ? 'Términos' : 'Terms'}</a
+		>
+		<a href={locale === 'en' ? '/privacy' : `/${locale}/privacy`}
+			>{locale === 'ru' ? 'Конфиденциальность' : locale === 'es' ? 'Privacidad' : 'Privacy'}</a
+		>
+		<a href={locale === 'en' ? '/refunds' : `/${locale}/refunds`}
+			>{locale === 'ru' ? 'Возвраты' : locale === 'es' ? 'Reembolsos' : 'Refunds'}</a
+		>
+	</footer>
 </PageShell>
 
 <style>
@@ -132,6 +146,18 @@
 	.languages a.active {
 		background: var(--color-surface-hover);
 		color: var(--color-accent);
+	}
+	.legal-footer {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: var(--space-3);
+		border-top: 1px solid var(--color-border);
+		padding: var(--space-5);
+	}
+	.legal-footer a {
+		color: var(--color-text-muted);
+		font-size: var(--text-sm);
 	}
 	@media (max-width: 480px) {
 		:global(.site-header) {

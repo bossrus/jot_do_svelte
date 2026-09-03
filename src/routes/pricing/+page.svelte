@@ -697,6 +697,11 @@
 			>{c.pricing}</a
 		>
 	</nav>
+	<nav class="legal-links" aria-label="Legal navigation">
+		<a href={locale === 'en' ? '/terms' : `/${locale}/terms`}>Terms</a>
+		<a href={locale === 'en' ? '/privacy' : `/${locale}/privacy`}>Privacy</a>
+		<a href={locale === 'en' ? '/refunds' : `/${locale}/refunds`}>Refunds</a>
+	</nav>
 	<small>© {new Date().getFullYear()} JotDo</small>
 </footer>
 

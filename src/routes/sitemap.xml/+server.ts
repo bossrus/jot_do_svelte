@@ -2,7 +2,10 @@ import type { RequestHandler } from './$types';
 export const GET: RequestHandler = ({ url }) => {
 	const groups = [
 		{ name: 'about', priority: '1.0' },
-		{ name: 'pricing', priority: '0.9' }
+		{ name: 'pricing', priority: '0.9' },
+		{ name: 'terms', priority: '0.7' },
+		{ name: 'privacy', priority: '0.7' },
+		{ name: 'refunds', priority: '0.7' }
 	];
 	const pages = groups.flatMap(({ name, priority }) =>
 		[
