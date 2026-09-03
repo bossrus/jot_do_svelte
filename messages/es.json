@@ -434,7 +434,6 @@
 	"valid_until": "válido hasta el {date}",
 	"billing_period": "Periodo de facturación",
 	"discount_code": "Código promocional",
-	"discount_code_placeholder": "Introduce el código promocional",
 	"billing_month": "Mensual",
 	"billing_year": "Anual",
 	"billing_five_years": "Cinco años",

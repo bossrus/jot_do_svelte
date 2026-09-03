@@ -434,7 +434,6 @@
 	"valid_until": "действует до {date}",
 	"billing_period": "Период оплаты",
 	"discount_code": "Промокод",
-	"discount_code_placeholder": "Введите промокод",
 	"billing_month": "Помесячно",
 	"billing_year": "За год",
 	"billing_five_years": "За 5 лет",

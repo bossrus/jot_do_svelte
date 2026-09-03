@@ -21,6 +21,7 @@
 		type BillingPeriod
 	} from '$lib/billing/pricing';
 	import Modal from '$lib/components/Modal.svelte';
+	import Input from '$lib/components/Input.svelte';
 	import {
 		IconCheck,
 		IconCloud,
@@ -134,6 +135,9 @@
 				}).format(date)
 			: '';
 	}
+	function reloadAfterBillingChange() {
+		window.setTimeout(() => location.reload(), 2000);
+	}
 	async function purchase(plan: PaidPlan) {
 		if (processingPlan || !emailVerified || isDowngrade(plan) || isShorterPeriod(period)) return;
 		processingPlan = plan;
@@ -157,7 +161,7 @@
 				const paddle = await loadPaddle(token, (event) => {
 					if (event.name === 'checkout.completed') {
 						message = m.payment_processing_webhook();
-						void authService.refreshSession();
+						reloadAfterBillingChange();
 					}
 				});
 				paddle.Checkout.open({
@@ -175,6 +179,7 @@
 			}
 			message = m.payment_processing_webhook();
 			await authService.refreshSession();
+			reloadAfterBillingChange();
 		} catch (error) {
 			message = error instanceof Error ? error.message : m.payment_failed();
 		} finally {
@@ -217,17 +222,14 @@
 				</span>
 			{/each}
 		</div>
-		<label class="discount-field">
-			<span>{m.discount_code()}</span>
-			<input
-				type="text"
+		<div class="discount-field">
+			<Input
 				bind:value={discountCode}
-				placeholder={m.discount_code_placeholder()}
-				maxlength="64"
+				placeholder={m.discount_code()}
+				maxlength={64}
 				autocomplete="off"
-				spellcheck="false"
 			/>
-		</label>
+		</div>
 		<div class="cards">
 			{#each PAID_PLANS as plan (plan)}
 				{@const definition = PLAN_DEFINITIONS[plan]}
@@ -375,31 +377,8 @@
 		font-size: 0.67rem;
 	}
 	.discount-field {
-		display: grid;
-		grid-template-columns: auto minmax(10rem, 18rem);
-		align-items: center;
-		justify-content: center;
-		gap: 0.65rem;
+		width: min(100%, 18rem);
 		margin: -0.7rem auto 1.35rem;
-		color: #586173;
-		font-size: 0.8rem;
-		font-weight: 700;
-	}
-	.discount-field input {
-		width: 100%;
-		min-height: 2.45rem;
-		box-sizing: border-box;
-		border: 1px solid #d7dee8;
-		border-radius: 0.55rem;
-		background: #fff;
-		padding: 0.55rem 0.7rem;
-		color: #111827;
-		font: inherit;
-		text-transform: uppercase;
-	}
-	.discount-field input:focus {
-		border-color: var(--color-accent);
-		outline: 2px solid color-mix(in srgb, var(--color-accent) 18%, transparent);
 	}
 	.cards {
 		display: grid;
@@ -558,8 +537,6 @@
 			display: none;
 		}
 		.discount-field {
-			grid-template-columns: 1fr;
-			gap: 0.35rem;
 			margin-top: -0.65rem;
 		}
 		.cards {
