@@ -433,6 +433,8 @@
 	"current_plan": "Current plan: {plan}",
 	"valid_until": "valid until {date}",
 	"billing_period": "Billing period",
+	"discount_code": "Promo code",
+	"discount_code_placeholder": "Enter promo code",
 	"billing_month": "Monthly",
 	"billing_year": "Yearly",
 	"billing_five_years": "Five years",
