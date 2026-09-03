@@ -104,7 +104,12 @@
 			paddle.Checkout.open({
 				transactionId: result.transactionId,
 				customer: $session.data?.user.email ? { email: $session.data.user.email } : undefined,
-				settings: { displayMode: 'overlay', theme: 'light', successUrl: `${location.origin}/app` }
+				settings: {
+					displayMode: 'overlay',
+					theme: 'light',
+					showAddDiscounts: true,
+					successUrl: `${location.origin}/app`
+				}
 			});
 		} catch (cause) {
 			error =

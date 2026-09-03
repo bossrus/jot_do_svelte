@@ -164,6 +164,7 @@
 					settings: {
 						displayMode: 'overlay',
 						theme: 'light',
+						showAddDiscounts: true,
 						successUrl: `${location.origin}/app`
 					}
 				});
