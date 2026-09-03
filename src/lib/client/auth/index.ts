@@ -38,6 +38,13 @@ export const authService = {
 	resetPassword(newPassword: string, token: string) {
 		return authClient.resetPassword({ newPassword, token });
 	},
+	changePassword(currentPassword: string, newPassword: string) {
+		return authClient.changePassword({
+			currentPassword,
+			newPassword,
+			revokeOtherSessions: true
+		});
+	},
 	updateName(name: string) {
 		return authClient.updateUser({ name });
 	},

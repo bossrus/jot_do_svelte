@@ -7,6 +7,7 @@
 	import { authService, session } from '$lib/client/auth';
 	import UserAvatar from './UserAvatar.svelte';
 	import { isImportableImage } from '$lib/client/images';
+	import { validatePassword } from '$lib/client/auth/validation';
 	import {
 		IconDeviceFloppy,
 		IconLoader2,
@@ -29,11 +30,17 @@
 	let avatarPicker = $state<HTMLInputElement>();
 	let namePending = $state(false),
 		emailPending = $state(false),
-		avatarPending = $state(false);
+		avatarPending = $state(false),
+		passwordPending = $state(false);
 	let nameError = $state(''),
 		emailError = $state(''),
 		emailNotice = $state(''),
-		avatarError = $state('');
+		avatarError = $state(''),
+		passwordError = $state(''),
+		passwordNotice = $state('');
+	let currentPassword = $state(''),
+		newPassword = $state(''),
+		passwordConfirmation = $state('');
 	let accountPending = $derived(namePending || emailPending);
 	let accountChanged = $derived(
 		name.trim() !== ($session.data?.user.name ?? '') ||
@@ -78,6 +85,33 @@
 		if (name.trim() !== ($session.data?.user.name ?? '')) await saveName();
 		if (email.trim().toLowerCase() !== ($session.data?.user.email ?? '').toLowerCase())
 			await saveEmail();
+	}
+	async function savePassword() {
+		if (passwordPending) return;
+		passwordError = '';
+		passwordNotice = '';
+		if (!currentPassword) {
+			passwordError = t(m.current_password_required);
+			return;
+		}
+		passwordError = validatePassword(newPassword, passwordConfirmation) || '';
+		if (passwordError) return;
+		passwordPending = true;
+		const result = await authService.changePassword(currentPassword, newPassword);
+		passwordPending = false;
+		if (result.error) {
+			passwordError = t(m.password_change_failed);
+			return;
+		}
+		currentPassword = '';
+		newPassword = '';
+		passwordConfirmation = '';
+		passwordNotice = t(m.password_change_success);
+	}
+	function passwordEnter(event: KeyboardEvent) {
+		if (event.key !== 'Enter') return;
+		event.preventDefault();
+		void savePassword();
 	}
 	async function uploadAvatar(file: File) {
 		if (avatarPending) return;
@@ -238,6 +272,43 @@
 				</div>
 			</div>
 		</fieldset>{/if}
+	{#if $session.data}<fieldset>
+			<legend>{t(m.change_password)}</legend>
+			<div class="fields">
+				<Input
+					bind:value={currentPassword}
+					placeholder={t(m.current_password)}
+					type="password"
+					autocomplete="current-password"
+					disabled={passwordPending}
+					onkeydown={passwordEnter}
+				/>
+				<Input
+					bind:value={newPassword}
+					placeholder={t(m.new_password)}
+					type="password"
+					autocomplete="new-password"
+					disabled={passwordPending}
+					onkeydown={passwordEnter}
+				/>
+				<Input
+					bind:value={passwordConfirmation}
+					placeholder={t(m.repeat_password)}
+					type="password"
+					autocomplete="new-password"
+					disabled={passwordPending}
+					error={passwordError}
+					onkeydown={passwordEnter}
+				/>
+				{#if passwordNotice}<small class="success" role="status">{passwordNotice}</small>{/if}
+				<div class="password-actions">
+					<button type="button" disabled={passwordPending} onclick={() => void savePassword()}>
+						{#if passwordPending}<IconLoader2 class="spin" size={20} />{/if}
+						{passwordPending ? t(m.saving) : t(m.change_password)}
+					</button>
+				</div>
+			</div>
+		</fieldset>{/if}
 </Modal>
 
 <style>
@@ -342,6 +413,26 @@
 		color: var(--color-text-muted);
 		cursor: default;
 		opacity: 0.6;
+	}
+	.password-actions {
+		display: flex;
+		justify-content: flex-end;
+	}
+	.password-actions button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		border: 1px solid var(--color-border);
+		border-radius: 0.45rem;
+		background: var(--color-surface);
+		padding: 0.6rem 0.85rem;
+		color: var(--color-accent);
+		font-weight: 700;
+		cursor: pointer;
+	}
+	.password-actions button:disabled {
+		cursor: wait;
+		opacity: 0.65;
 	}
 	:global(.avatar-action .spin) {
 		animation: spin 0.8s linear infinite;
