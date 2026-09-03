@@ -1,5 +1,5 @@
 <script lang="ts">
-	import favicon from '$lib/assets/favicon.svg';
+	import favicon from '$lib/assets/favicon-project.png';
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { initializeLocale, localeState } from '$lib/client/locale';
