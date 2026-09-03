@@ -108,9 +108,10 @@ describe.sequential('todo access service', () => {
 	});
 
 	it('lists workers as available participants and allows granting them direct access', async () => {
-		await db
-			.insert(todoWorkers)
-			.values([{ todoId, userId: strangerId }, { todoId, userId: ownerId }]);
+		await db.insert(todoWorkers).values([
+			{ todoId, userId: strangerId },
+			{ todoId, userId: ownerId }
+		]);
 		const access = await service.list(ownerId, todoId);
 		expect(access.effectiveParticipants.map((item) => item.userId)).not.toContain(strangerId);
 		expect(access.availableParticipants.map((item) => item.userId)).toContain(strangerId);

@@ -16,7 +16,10 @@ export async function POST({ locals, request }) {
 	if (!locals.user) return json({ code: 'UNAUTHENTICATED' }, { status: 401 });
 	const parsed = inputSchema.safeParse(await request.json().catch(() => null));
 	if (!parsed.success)
-		return json({ code: 'INVALID_BODY', message: 'Некорректные параметры тарифа' }, { status: 400 });
+		return json(
+			{ code: 'INVALID_BODY', message: 'Некорректные параметры тарифа' },
+			{ status: 400 }
+		);
 
 	const { plan, period } = parsed.data;
 	const [user] = await db

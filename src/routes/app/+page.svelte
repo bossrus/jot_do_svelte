@@ -36,6 +36,7 @@
 	import ContactGroupsDropdown from '$lib/components/ContactGroupsDropdown.svelte';
 	import type { FriendGroup } from '$lib/friends/contracts';
 	import { getTodoPreviewText } from '$lib/client/todo-preview';
+	import { filterTodos, pageCount, pageItems, type TodoFilterGroup } from '$lib/client/todo-list';
 	import { todoAccessListSchema, type TodoAccessParticipant } from '$lib/todos/access-contracts';
 	import { friendsApi } from '$lib/client/friends';
 	import { todoInvitesApi } from '$lib/client/todo-invites';
@@ -89,8 +90,7 @@
 	let closedPage = $state(1);
 	let pageInput = $state<string | number>(1);
 	const closedPageSize = 10;
-	type FilterGroup = { id: string; name: string; ownerId: string; todoIds: string[] };
-	let filterGroups = $state<FilterGroup[]>([]);
+	let filterGroups = $state<TodoFilterGroup[]>([]);
 	let dropdownGroups = $derived<FriendGroup[]>(
 		filterGroups.map((group) => ({
 			id: group.id,
@@ -150,46 +150,21 @@
 		await tick();
 		await composerEditor?.focus();
 	}
-	let filteredTodos = $derived.by(() => {
-		const query = searchQuery.trim().toLocaleLowerCase();
-		const selectedGroup = filterGroups.find((group) => group.id === selectedGroupId);
-		const groupTodoIds = selectedGroup ? new Set(selectedGroup.todoIds) : null;
-		const fromDay = (value: string) => (value ? new Date(`${value}T00:00:00`).getTime() : null);
-		const throughDay = (value: string) =>
-			value ? new Date(`${value}T23:59:59.999`).getTime() : null;
-		const openedStart = fromDay(openedFrom);
-		const openedEnd = throughDay(openedTo);
-		const closedStart = fromDay(closedFrom);
-		const closedEnd = throughDay(closedTo);
-		return todos.filter((todo) => {
-			if (groupTodoIds && !groupTodoIds.has(todo.id)) return false;
-			if (openedStart !== null && todo.createdAt < openedStart) return false;
-			if (openedEnd !== null && todo.createdAt > openedEnd) return false;
-			if (
-				selectedStatus === 'closed' &&
-				closedStart !== null &&
-				(todo.closedAt === null || todo.closedAt < closedStart)
-			)
-				return false;
-			if (
-				selectedStatus === 'closed' &&
-				closedEnd !== null &&
-				(todo.closedAt === null || todo.closedAt > closedEnd)
-			)
-				return false;
-			if (!query) return true;
-			const taskText = todo.blocks
-				.flatMap((block) => (block.type === 'text' ? [block.text] : []))
-				.join(' ');
-			return `${taskText} ${commentSearchText.get(todo.id) ?? ''}`
-				.toLocaleLowerCase()
-				.includes(query);
-		});
-	});
-	let closedPageCount = $derived(Math.max(1, Math.ceil(filteredTodos.length / closedPageSize)));
+	let filteredTodos = $derived(
+		filterTodos(todos, filterGroups, commentSearchText, {
+			status: selectedStatus,
+			searchQuery,
+			selectedGroupId,
+			openedFrom,
+			openedTo,
+			closedFrom,
+			closedTo
+		})
+	);
+	let closedPageCount = $derived(pageCount(filteredTodos.length, closedPageSize));
 	let visibleTodos = $derived(
 		selectedStatus === 'closed'
-			? filteredTodos.slice((closedPage - 1) * closedPageSize, closedPage * closedPageSize)
+			? pageItems(filteredTodos, closedPage, closedPageSize)
 			: filteredTodos
 	);
 	let selectableVisibleTodos = $derived(
@@ -360,7 +335,7 @@
 		let cancelled = false;
 		void fetch('/api/todo-filter-groups')
 			.then((response) => (response.ok ? response.json() : { groups: [] }))
-			.then((value: { groups?: FilterGroup[] }) => {
+			.then((value: { groups?: TodoFilterGroup[] }) => {
 				if (!cancelled) filterGroups = value.groups ?? [];
 			})
 			.catch(() => {

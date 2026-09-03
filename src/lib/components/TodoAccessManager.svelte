@@ -255,7 +255,7 @@
 		<div class="pickers">
 			<ContactMembersDropdown
 				{friends}
-			accessParticipants={availableParticipants}
+				accessParticipants={availableParticipants}
 				selected={selectedUsers}
 				label={canLoadContacts
 					? m.friends()

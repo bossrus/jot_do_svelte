@@ -36,9 +36,7 @@
 	let processingPlan = $state<PaidPlan | null>(null);
 	let message = $state('');
 	let previewVersion = 0;
-	let upgradePreviews = $state<
-		Partial<Record<PaidPlan, { amount: number; currency: string }>>
-	>({});
+	let upgradePreviews = $state<Partial<Record<PaidPlan, { amount: number; currency: string }>>>({});
 	let emailVerified = $derived(Boolean($session.data?.user.emailVerified));
 	let emailVerificationTitle = $derived(m.verification_required_payment());
 	let currentPlan = $derived<UserPlan>(
@@ -235,10 +233,10 @@
 									: m.plan_group_description()}
 					</p>
 					{#if upgradePreviews[plan]}<p class="proration">
-						{m.upgrade_charge_now({
-							amount: formatMoney(upgradePreviews[plan]!.amount, upgradePreviews[plan]!.currency)
-						})}
-					</p>{/if}
+							{m.upgrade_charge_now({
+								amount: formatMoney(upgradePreviews[plan]!.amount, upgradePreviews[plan]!.currency)
+							})}
+						</p>{/if}
 					<div class="price">
 						<strong>{formatUsd(monthlyPrice(plan))}</strong><span>{m.per_month()}</span>
 					</div>

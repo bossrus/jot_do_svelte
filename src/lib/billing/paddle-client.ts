@@ -1,8 +1,4 @@
-import {
-	initializePaddle,
-	type Paddle,
-	type PaddleEventData
-} from '@paddle/paddle-js';
+import { initializePaddle, type Paddle, type PaddleEventData } from '@paddle/paddle-js';
 
 let loader: Promise<Paddle> | null = null;
 let eventHandler: (event: PaddleEventData) => void = () => undefined;
